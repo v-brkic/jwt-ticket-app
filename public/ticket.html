@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticket Details</title>
+</head>
+<body>
+  <h1>Ticket Details</h1>
+  <div id="user-info">Loading user info...</div>
+  <div id="ticket-details">Loading ticket details...</div>
+
+  <script>
+    const auth0Domain = 'dev-f8wdvdmk46xwgs18.eu.auth0.com';
+    const clientId = '7gu4rktZkk5jxVVY55Q2WkWu8c3NpaVP';
+    const redirectUri = 'http://localhost:3001/callback';
+
+    const idToken = localStorage.getItem('id_token');
+
+    if (!idToken) {
+      localStorage.setItem('ticketId', window.location.pathname.split('/').pop()); 
+      window.location.href = `https://${auth0Domain}/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=openid profile email`;
+    } else {
+      const userInfo = JSON.parse(atob(idToken.split('.')[1]));
+      document.getElementById('user-info').innerHTML = `Logged in as: ${userInfo.name}`;
+
+      const ticketId = window.location.pathname.split('/').pop();
+      
+      fetchTicketDetails(ticketId);
+    }
+
+    async function fetchTicketDetails(ticketId) {
+      try {
+        const response = await fetch(`http://localhost:3001/api/ticket/${ticketId}`);
+        if (!response.ok) {
+          throw new Error('Error fetching ticket details');
+        }
+
+        const ticketData = await response.json();
+        document.getElementById('ticket-details').innerHTML = `
+          <p>Ticket ID: ${ticketData.ticket.id}</p>
+          <p>VATIN (OIB): ${ticketData.ticket.vatin}</p>
+          <p>First Name: ${ticketData.ticket.first_name}</p>
+          <p>Last Name: ${ticketData.ticket.last_name}</p>
+          <p>Created At: ${ticketData.ticket.created_at}</p>
+        `;
+      } catch (error) {
+        document.getElementById('ticket-details').innerText = 'Error loading ticket details.';
+        console.error('Error fetching ticket details:', error.message);
+      }
+    }
+  </script>
+</body>
+</html>

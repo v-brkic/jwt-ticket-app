@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Total Tickets</title>
+</head>
+<body>
+  <h1>Total Tickets Generated</h1>
+  <div id="ticket-count">Loading...</div>
+
+  <script>
+    // Fetch total ticket count from the new API route
+    fetch('http://localhost:3001/ticket-count')
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('ticket-count').innerText = `Total tickets: ${data.totalTickets}`;
+      })
+      .catch(error => {
+        console.error('Error fetching ticket count:', error);
+        document.getElementById('ticket-count').innerText = 'Error loading ticket count';
+      });
+  </script>
+</body>
+</html>
