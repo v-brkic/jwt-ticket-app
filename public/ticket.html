@@ -13,7 +13,7 @@
   <script>
     const auth0Domain = 'dev-f8wdvdmk46xwgs18.eu.auth0.com';
     const clientId = '7gu4rktZkk5jxVVY55Q2WkWu8c3NpaVP';
-    const redirectUri = 'http://localhost:3001/callback';
+    const redirectUri = 'https://homework1-ticket-app.onrender.com/callback';
 
     const idToken = localStorage.getItem('id_token');
 
@@ -31,7 +31,7 @@
 
     async function fetchTicketDetails(ticketId) {
       try {
-        const response = await fetch(`http://localhost:3001/api/ticket/${ticketId}`);
+        const response = await fetch(`https://homework1-ticket-app.onrender.com/api/ticket/${ticketId}`);
         if (!response.ok) {
           throw new Error('Error fetching ticket details');
         }

@@ -9,7 +9,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors({
-  origin: 'http://localhost:3001',
+  origin: ['http://localhost:3001', 'https://your-app.onrender.com'],
   credentials: true,
 }));
 app.use(express.json());
@@ -72,7 +72,7 @@ app.post('/generate-ticket', auth.requiresAuthentication, async (req, res) => {
     );
 
     // Generate QR code for the ticket
-    const ticketUrl = `http://localhost:3001/ticket/${ticketId}`;
+    const ticketUrl = `${req.protocol}://${req.get('host')}/ticket/${ticketId}`;
     QRCode.toFileStream(res, ticketUrl, { type: 'png' });
 
   } catch (error) {

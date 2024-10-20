@@ -12,7 +12,7 @@
     const auth0Domain = 'dev-f8wdvdmk46xwgs18.eu.auth0.com';
     const clientId = '7gu4rktZkk5jxVVY55Q2WkWu8c3NpaVP';
     const clientSecret = 'dRIU0GzBM3jZZ13R_ZzU8HuMvPtAwgV3zyLriJ_F4tMhWt00RFuXW9JBDCaK6tw0';
-    const redirectUri = 'http://localhost:3001/callback';
+    const redirectUri = 'https://homework1-ticket-app.onrender.com/callback';
 
     async function handleAuthentication() {
       const params = new URLSearchParams(window.location.search);
@@ -40,7 +40,7 @@
           localStorage.setItem('id_token', idToken);
 
           const ticketId = localStorage.getItem('ticketId');
-          window.location.href = `/ticket/${ticketId}`;
+          window.location.href = `https://homework1-ticket-app.onrender.com/ticket/${ticketId}`;
         } catch (error) {
           document.body.innerHTML = `<h1>Error: ${error.message}</h1>`;
         }

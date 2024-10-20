@@ -11,7 +11,7 @@
 
   <script>
     // Fetch total ticket count from the new API route
-    fetch('http://localhost:3001/ticket-count')
+    fetch('https://homework1-ticket-app.onrender.com/ticket-count')
       .then(response => response.json())
       .then(data => {
         document.getElementById('ticket-count').innerText = `Total tickets: ${data.totalTickets}`;
