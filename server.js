@@ -17,12 +17,10 @@ app.use(express.static('public'));  // Serve static files from 'public' folder
 
 // PostgreSQL setup
 const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'lab1qrdb',
-  password: 'bazepodataka',
-  port: 5434,
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }  // Required for secure connections on Render
 });
+
 
 // Applying middleware to set user info
 app.use(auth.setUserInfo); // Custom middleware to extract user info from JWT
