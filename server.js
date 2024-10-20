@@ -9,7 +9,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors({
-  origin: ['http://localhost:3001', 'https://your-app.onrender.com'],
+  origin: ['http://localhost:3001', 'https://homework1-ticket-app.onrender.com'],
   credentials: true,
 }));
 app.use(express.json());
