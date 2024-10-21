@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const auth = require('./06-auth-middleware'); // Import the custom auth middleware
 const app = express();
+const fetch = require('node-fetch'); // Import node-fetch for Auth0 requests
 const PORT = process.env.PORT || 3001;
 
 app.use(cors({
@@ -21,21 +22,33 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }  // Required for secure connections on Render
 });
 
-
 // Applying middleware to set user info
 app.use(auth.setUserInfo); // Custom middleware to extract user info from JWT
 
-// Route for login to generate a token
-app.post('/login', (req, res) => {
-  const { username, password } = req.body;
+// Route for generating a token using client credentials
+app.post('/auth/token', async (req, res) => {
+  try {
+    const response = await fetch(`https://${process.env.AUTH0_DOMAIN}/oauth/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        grant_type: 'client_credentials',
+        client_id: process.env.AUTH0_CLIENT_ID,
+        client_secret: process.env.AUTH0_CLIENT_SECRET,
+        audience: process.env.AUTH0_AUDIENCE
+      })
+    });
 
-  if (!username || !password) {
-    return res.status(400).send('Missing username or password');
+    const tokenData = await response.json();
+    if (response.status !== 200) {
+      return res.status(400).json({ error: tokenData.error_description || 'Error generating token' });
+    }
+
+    res.json({ token: tokenData.access_token });
+  } catch (error) {
+    console.error('Error generating token:', error.message);
+    res.status(500).json({ message: 'Server error' });
   }
-  
-  const payload = { username };  // Create payload with username
-  const token = auth.createToken(payload);  // Create JWT token with username
-  res.json({ token });  // Respond with the JWT token
 });
 
 // Public route for total ticket count (no authentication required)
