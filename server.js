@@ -101,7 +101,7 @@ app.get('/ticket/:id', (req, res) => {
     const ticketId = req.params.id;
     const auth0Domain = process.env.AUTH0_DOMAIN;
     const clientId = process.env.AUTH0_CLIENT_ID;
-    const redirectUri = `${req.protocol}://${req.get('host')}/callback`;
+    const redirectUri = `https://homework1-ticket-app.onrender.com/callback`;
 
     // Redirect to Auth0 login and save ticketId in localStorage for the client
     return res.send(`
