@@ -4,7 +4,7 @@ const { Pool } = require('pg');
 const QRCode = require('qrcode');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
-const auth = require('./06-auth-middleware'); // Import the custom auth middleware
+const auth = require('./06-auth-middleware'); // Import custom auth middleware
 const app = express();
 const fetch = require('node-fetch'); // Import node-fetch for Auth0 requests
 const PORT = process.env.PORT || 3001;
@@ -21,6 +21,9 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }  // Required for secure connections on Render
 });
+
+// Apply middleware to set user info
+app.use(auth.setUserInfo); // Custom middleware to extract user info from JWT
 
 // Route for generating a token using client credentials (no authentication needed)
 app.post('/auth/token', async (req, res) => {
@@ -59,9 +62,8 @@ app.get('/ticket-count', async (req, res) => {
   }
 });
 
-// Apply middleware only to protected routes
 // Protected route to generate a new ticket (requires JWT Auth)
-app.post('/generate-ticket', auth.setUserInfo, auth.requiresAuthentication, async (req, res) => {
+app.post('/generate-ticket', auth.requiresAuthentication, async (req, res) => {
   const { vatin, firstName, lastName } = req.body;
 
   if (!vatin || !firstName || !lastName) {

@@ -31,8 +31,7 @@ function setUserInfo(req, res, next) {
       if (err) {
         return res.status(401).send("Invalid Token");
       }
-      // Assuming the token contains relevant application data
-      req.user = decodedToken;
+      req.user = decodedToken; // Attach decoded token data to req.user
       next();
     });
   } else {
