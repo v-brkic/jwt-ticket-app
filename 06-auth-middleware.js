@@ -1,52 +1,36 @@
 const jwt = require('jsonwebtoken');
-const jwksRsa = require('jwks-rsa'); // Use jwks-rsa to get Auth0 public keys
 const dotenv = require('dotenv');
 dotenv.config();
 
-// Create a JWKS client to fetch public keys from Auth0
-const jwksClient = jwksRsa({
-  jwksUri: `https://${process.env.AUTH0_DOMAIN}/.well-known/jwks.json`,
-  cache: true,
-  rateLimit: true,
-  jwksRequestsPerMinute: 5
-});
-
-// Function to get the signing key from Auth0
-function getKey(header, callback) {
-  jwksClient.getSigningKey(header.kid, function (err, key) {
-    if (err) {
-      callback(err, null);
-    } else {
-      const signingKey = key.getPublicKey(); // Get the public key for verifying the token
-      callback(null, signingKey);
-    }
-  });
+// Function to create JWT token
+function createToken(payload) {
+  return jwt.sign(payload, process.env.TOKEN_KEY, { expiresIn: "2m" });
 }
 
 // Function to set user info from token in request object
 function setUserInfo(req, res, next) {
   const bearerToken = req.headers.authorization?.replace(/^Bearer /, '');
   if (bearerToken) {
-    jwt.verify(bearerToken, getKey, {}, (err, decodedToken) => {
-      if (err) {
-        return res.status(401).send("Invalid Token");
+    try {
+      const token = jwt.verify(bearerToken, process.env.TOKEN_KEY);
+      if (token) {
+        req.user = { app: 'ticket-app' };  // Store relevant info in req.user
       }
-      req.user = decodedToken; // Attach decoded token data to req.user
-      next();
-    });
-  } else {
-    return res.status(401).send("Token not provided");
+    } catch (err) {
+      return res.status(401).send("Invalid Token");
+    }
   }
+  next();
 }
 
-// Middleware to require authentication for protected routes
+// Middleware to require authentication
 function requiresAuthentication(req, res, next) {
   if (req.user) {
-    next(); // User or application is authenticated, proceed
+    next(); // User is authenticated, proceed
   } else {
     res.writeHead(401, { 'WWW-Authenticate': 'Bearer' });
     res.end('Authentication is needed');
   }
 }
 
-module.exports = { setUserInfo, requiresAuthentication };
+module.exports = { createToken, setUserInfo, requiresAuthentication };

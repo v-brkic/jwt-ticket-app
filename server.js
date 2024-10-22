@@ -4,7 +4,7 @@ const { Pool } = require('pg');
 const QRCode = require('qrcode');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
-const auth = require('./06-auth-middleware'); // Import custom auth middleware
+const auth = require('./06-auth-middleware'); // Import the custom auth middleware
 const app = express();
 const fetch = require('node-fetch'); // Import node-fetch for Auth0 requests
 const PORT = process.env.PORT || 3001;
@@ -22,35 +22,22 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }  // Required for secure connections on Render
 });
 
-// Apply middleware to set user info
+// Applying middleware to set user info
 app.use(auth.setUserInfo); // Custom middleware to extract user info from JWT
 
-// Route for generating a token using client credentials (no authentication needed)
-app.post('/auth/token', async (req, res) => {
+// Route for generating a token using client credentials
+app.post('/auth/token', (req, res) => {
   try {
-    const response = await fetch(`https://${process.env.AUTH0_DOMAIN}/oauth/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        grant_type: 'client_credentials',
-        client_id: process.env.AUTH0_CLIENT_ID,
-        client_secret: process.env.AUTH0_CLIENT_SECRET,
-        audience: process.env.AUTH0_AUDIENCE
-      })
-    });
+    // Create a token signed with the TOKEN_KEY
+    const payload = { app: 'ticket-app' };
+    const token = jwt.sign(payload, process.env.TOKEN_KEY, { expiresIn: '2h' }); // Token valid for 2 hours
 
-    const tokenData = await response.json();
-    if (response.status !== 200) {
-      return res.status(400).json({ error: tokenData.error_description || 'Error generating token' });
-    }
-
-    res.json({ token: tokenData.access_token });
+    res.json({ token });
   } catch (error) {
     console.error('Error generating token:', error.message);
     res.status(500).json({ message: 'Server error' });
   }
 });
-
 // Public route for total ticket count (no authentication required)
 app.get('/ticket-count', async (req, res) => {
   try {
@@ -94,30 +81,6 @@ app.post('/generate-ticket', auth.requiresAuthentication, async (req, res) => {
   }
 });
 
-// Route to serve the ticket details page (ticket.html) with manual token handling
-app.get('/ticket/:id', (req, res) => {
-  const bearerToken = req.headers.authorization?.replace(/^Bearer /, '');
-
-  // If no token, redirect to Auth0 login
-  if (!bearerToken) {
-    const ticketId = req.params.id;
-    const auth0Domain = process.env.AUTH0_DOMAIN;
-    const clientId = process.env.AUTH0_CLIENT_ID;
-    const redirectUri = `https://homework1-ticket-app.onrender.com/callback`;
-
-    // Redirect to Auth0 login and save ticketId in localStorage for the client
-    return res.send(`
-      <script>
-        localStorage.setItem('ticketId', '${ticketId}');
-        window.location.href = 'https://${auth0Domain}/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=openid profile email';
-      </script>
-    `);
-  }
-
-  // If token exists, serve the ticket.html page
-  res.sendFile(path.join(__dirname, 'public', 'ticket.html'));
-});
-
 // Route to serve the home page (index.html)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -126,6 +89,11 @@ app.get('/', (req, res) => {
 // Route to serve the callback page (callback.html)
 app.get('/callback', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'callback.html'));
+});
+
+// Route to serve the ticket details page (ticket.html)
+app.get('/ticket/:id', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'ticket.html'));
 });
 
 // API route to fetch ticket details (used in ticket.html)
@@ -148,5 +116,5 @@ app.get('/api/ticket/:id', async (req, res) => {
 
 // Start the server
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on  http://localhost:${PORT}`);
 });
