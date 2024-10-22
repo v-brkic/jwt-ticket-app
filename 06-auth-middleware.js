@@ -50,4 +50,4 @@ function requiresAuthentication(req, res, next) {
   }
 }
 
-module.exports = { createToken, setUserInfo, requiresAuthentication };
+module.exports = { setUserInfo, requiresAuthentication };
