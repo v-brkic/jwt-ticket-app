@@ -22,10 +22,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }  // Required for secure connections on Render
 });
 
-// Applying middleware to set user info
-app.use(auth.setUserInfo); // Custom middleware to extract user info from JWT
-
-// Route for generating a token using client credentials
+// Route for generating a token using client credentials (NO authentication needed)
 app.post('/auth/token', async (req, res) => {
   try {
     const response = await fetch(`https://${process.env.AUTH0_DOMAIN}/oauth/token`, {
@@ -61,6 +58,9 @@ app.get('/ticket-count', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// Apply middleware to set user info for protected routes
+app.use(auth.setUserInfo); // Apply it globally after unprotected routes
 
 // Protected route to generate a new ticket (requires JWT Auth)
 app.post('/generate-ticket', auth.requiresAuthentication, async (req, res) => {
