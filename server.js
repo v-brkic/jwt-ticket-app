@@ -22,7 +22,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }  // Required for secure connections on Render
 });
 
-// Route for generating a token using client credentials (NO authentication needed)
+// Route for generating a token using client credentials (no authentication needed)
 app.post('/auth/token', async (req, res) => {
   try {
     const response = await fetch(`https://${process.env.AUTH0_DOMAIN}/oauth/token`, {
@@ -59,11 +59,9 @@ app.get('/ticket-count', async (req, res) => {
   }
 });
 
-// Apply middleware to set user info for protected routes
-app.use(auth.setUserInfo); // Apply it globally after unprotected routes
-
+// Apply middleware only to protected routes
 // Protected route to generate a new ticket (requires JWT Auth)
-app.post('/generate-ticket', auth.requiresAuthentication, async (req, res) => {
+app.post('/generate-ticket', auth.setUserInfo, auth.requiresAuthentication, async (req, res) => {
   const { vatin, firstName, lastName } = req.body;
 
   if (!vatin || !firstName || !lastName) {
@@ -94,6 +92,30 @@ app.post('/generate-ticket', auth.requiresAuthentication, async (req, res) => {
   }
 });
 
+// Route to serve the ticket details page (ticket.html) with manual token handling
+app.get('/ticket/:id', (req, res) => {
+  const bearerToken = req.headers.authorization?.replace(/^Bearer /, '');
+
+  // If no token, redirect to Auth0 login
+  if (!bearerToken) {
+    const ticketId = req.params.id;
+    const auth0Domain = process.env.AUTH0_DOMAIN;
+    const clientId = process.env.AUTH0_CLIENT_ID;
+    const redirectUri = `${req.protocol}://${req.get('host')}/callback`;
+
+    // Redirect to Auth0 login and save ticketId in localStorage for the client
+    return res.send(`
+      <script>
+        localStorage.setItem('ticketId', '${ticketId}');
+        window.location.href = 'https://${auth0Domain}/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=openid profile email';
+      </script>
+    `);
+  }
+
+  // If token exists, serve the ticket.html page
+  res.sendFile(path.join(__dirname, 'public', 'ticket.html'));
+});
+
 // Route to serve the home page (index.html)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -104,34 +126,23 @@ app.get('/callback', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'callback.html'));
 });
 
-// Route to serve the ticket details page (ticket.html)
-app.get('/ticket/:id', (req, res) => {
-  const bearerToken = req.headers.authorization?.replace(/^Bearer /, '');
+// API route to fetch ticket details (used in ticket.html)
+app.get('/api/ticket/:id', async (req, res) => {
+  const ticketId = req.params.id;
 
-  // Check if the token exists
-  if (!bearerToken) {
-    // Save the ticketId in localStorage
-    const ticketId = req.params.id;
+  try {
+    const { rows } = await pool.query('SELECT * FROM tickets WHERE id = $1', [ticketId]);
 
-    // If no token, redirect to Auth0 login
-    const auth0Domain = process.env.AUTH0_DOMAIN;
-    const clientId = process.env.AUTH0_CLIENT_ID;
-    const redirectUri = `${req.protocol}://${req.get('host')}/callback`;
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
 
-    // You should also ensure the client saves the ticketId before redirect
-    res.send(`
-      <script>
-        localStorage.setItem('ticketId', '${ticketId}');
-        window.location.href = 'https://${auth0Domain}/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=openid profile email';
-      </script>
-    `);
-  } else {
-    // If token exists, serve the ticket.html page
-    res.sendFile(path.join(__dirname, 'public', 'ticket.html'));
+    res.json({ ticket: rows[0] });
+  } catch (error) {
+    console.error('Error fetching ticket details:', error.message);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
-
-
 
 // Start the server
 app.listen(PORT, () => {
