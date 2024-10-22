@@ -106,26 +106,32 @@ app.get('/callback', (req, res) => {
 
 // Route to serve the ticket details page (ticket.html)
 app.get('/ticket/:id', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'ticket.html'));
-});
+  const bearerToken = req.headers.authorization?.replace(/^Bearer /, '');
 
-// API route to fetch ticket details (used in ticket.html)
-app.get('/api/ticket/:id', async (req, res) => {
-  const ticketId = req.params.id;
+  // Check if the token exists
+  if (!bearerToken) {
+    // Save the ticketId in localStorage
+    const ticketId = req.params.id;
 
-  try {
-    const { rows } = await pool.query('SELECT * FROM tickets WHERE id = $1', [ticketId]);
+    // If no token, redirect to Auth0 login
+    const auth0Domain = process.env.AUTH0_DOMAIN;
+    const clientId = process.env.AUTH0_CLIENT_ID;
+    const redirectUri = `${req.protocol}://${req.get('host')}/callback`;
 
-    if (rows.length === 0) {
-      return res.status(404).json({ message: 'Ticket not found' });
-    }
-
-    res.json({ ticket: rows[0] });
-  } catch (error) {
-    console.error('Error fetching ticket details:', error.message);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    // You should also ensure the client saves the ticketId before redirect
+    res.send(`
+      <script>
+        localStorage.setItem('ticketId', '${ticketId}');
+        window.location.href = 'https://${auth0Domain}/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=openid profile email';
+      </script>
+    `);
+  } else {
+    // If token exists, serve the ticket.html page
+    res.sendFile(path.join(__dirname, 'public', 'ticket.html'));
   }
 });
+
+
 
 // Start the server
 app.listen(PORT, () => {
