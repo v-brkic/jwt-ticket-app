@@ -17,21 +17,28 @@
 
     const idToken = localStorage.getItem('id_token');
 
+    // Check if the token is present
     if (!idToken) {
-      localStorage.setItem('ticketId', window.location.pathname.split('/').pop()); 
+      // Save the ticketId to localStorage so we can return to this page after login
+      const ticketId = window.location.pathname.split('/').pop();
+      localStorage.setItem('ticketId', ticketId);
+
+      // Redirect to Auth0 login if token is missing
       window.location.href = `https://${auth0Domain}/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=openid profile email`;
     } else {
+      // If token exists, parse the token and display user info
       const userInfo = JSON.parse(atob(idToken.split('.')[1]));
       document.getElementById('user-info').innerHTML = `Logged in as: ${userInfo.name}`;
 
+      // Get the ticket ID from the URL and fetch the ticket details
       const ticketId = window.location.pathname.split('/').pop();
-      
       fetchTicketDetails(ticketId);
     }
 
+    // Function to fetch the ticket details
     async function fetchTicketDetails(ticketId) {
       try {
-        const response = await fetch(`https://homework1-ticket-app.onrender.com/api/ticket/${ticketId}`);
+        const response = await fetch(`/api/ticket/${ticketId}`);
         if (!response.ok) {
           throw new Error('Error fetching ticket details');
         }
