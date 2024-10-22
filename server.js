@@ -8,6 +8,7 @@ const auth = require('./06-auth-middleware'); // Import the custom auth middlewa
 const app = express();
 const fetch = require('node-fetch'); // Import node-fetch for Auth0 requests
 const PORT = process.env.PORT || 3001;
+const jwt = require('jsonwebtoken');
 
 app.use(cors({
   origin: ['http://localhost:3001', 'https://homework1-ticket-app.onrender.com'],
